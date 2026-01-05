@@ -1,0 +1,7 @@
+{
+  "name": "TEXTA - Phase 0",
+  "description": "A calm, trust-first conversation assistant that provides summaries, action items, and structural AI suggestions without judgment or psychological analysis.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
