@@ -27,9 +27,16 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+export interface DeceptionMarker {
+  type: 'Falsehood' | 'Hiding' | 'Inconsistency';
+  reason: string;
+  confidence: number;
+}
+
 export interface TranscriptLine {
   speaker: string;
   text: string;
+  integrityFlag?: DeceptionMarker;
 }
 
 export interface ActionItem {
@@ -63,14 +70,20 @@ export interface SpeakerInsight {
   speaker: string; 
   tone: ToneLabel;
   interestLevel: 'Dominant' | 'Collaborative' | 'Detached' | 'Inquisitive' | 'Passive Observer';
+  vibe: string;
+  cognitiveStyle: string; 
+  linguisticStyle: string; 
   metrics: {
     intensity: number;
     confidence: number;
     stability: number;
-    transparency: number;
+    transparency: number; // Structural honesty
+    shielding: number; // Level of hiding something
     engagement: number;
+    stress: number;
   };
   keyObservation: string;
+  honestyAlerts: string[]; // Specific notes on hiding/lying
 }
 
 export interface ConversationAnalysis {

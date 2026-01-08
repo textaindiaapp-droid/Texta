@@ -20,7 +20,8 @@ const RemindersView: React.FC<RemindersViewProps> = ({ reminders, onToggle, onUp
     return map[current];
   };
 
-  const ReminderCard = ({ item }: { item: Reminder }) => {
+  // Use React.FC to handle the key prop correctly when mapping over reminders
+  const ReminderCard: React.FC<{ item: Reminder }> = ({ item }) => {
     const isCompleted = item.progress === 'Completed';
 
     return (

@@ -6,41 +6,57 @@ export const analyzeConversation = async (audioBase64: string, mimeType: string)
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    TRANSCRIPTION AND MEMORY SYNTHESIS TASK:
-    1. VERBATIM TRANSCRIPT: Transcribe audio exactly with speaker IDs.
-    2. TOPIC CLUSTERS: Group parts of the conversation into 3-5 major thematic areas (Thematic Nodes).
-    3. RECALL CARDS: Extract specific factual statements, commitments, or dates.
-    4. INTERACTION PATTERNS: Analyze who influenced who and what was left hanging.
-    5. SPEAKER METRICS: Evaluate psychological markers (Transparency, Confidence, Engagement).
+    TASK: CONDUCT DEEP BEHAVIORAL AND ACOUSTIC INTELLIGENCE SYNTHESIS.
+    
+    SYSTEM INSTRUCTION: 
+    Act as a high-level Intelligence Node. Analyze the acoustic and linguistic properties of the provided session. 
+    Focus on "Structural Honesty" and "Acoustic Integrity".
+    
+    ANALYSIS REQUIREMENTS:
+    1. ACOUSTIC INTEGRITY: Detect if the speech is "REHEARSED" (reading from a script) or "SPONTANEOUS" (natural flow).
+    2. PSYCHOMETRICS (0-100%):
+       - Transparency: Willingness to share information.
+       - Shielding: Active withholding or deflection.
+       - Stress: Vocal tension and logical inconsistency.
+       - Confidence: Vocal authority.
+    3. STRATEGIC NODES: Provide AI-driven strategic suggestions for following up on this session.
+    4. VERBATIM TRANSCRIPT: Capture multi-lingual dialogue accurately.
 
-    JSON SCHEMA OUTPUT:
+    JSON OUTPUT SCHEMA:
     {
       "summary": "string",
       "meetingPulse": "High Energy|Steady Flow|Tense|Quiet",
-      "actionItems": [{ "task": "string", "priority": "Low|Medium|High" }],
+      "suggestions": ["string"],
       "topicClusters": [{ "label": "string", "relevance": number, "summary": "string" }],
       "recallCards": [{ "fact": "string", "source": "string", "category": "Commitment|Technical|Financial|Deadline|Concept" }],
-      "interactionPatterns": [{
-        "speakers": ["string"],
-        "type": "Question-Answer|Clarification|Interruption|Agreement|Concern-Reassurance|Unresolved|Brief Exchange",
-        "description": "string",
-        "toneDynamic": "string"
+      "actionItems": [{ "task": "string", "priority": "Low|Medium|High" }],
+      "transcript": [{ 
+        "speaker": "string", 
+        "text": "string", 
+        "integrityFlag": { "type": "Falsehood|Hiding|Inconsistency", "reason": "string", "confidence": number } 
       }],
-      "suggestions": ["string"],
-      "transcript": [{ "speaker": "string", "text": "string" }],
       "overallTones": [{ 
         "speaker": "string", 
         "tone": "ToneLabel", 
-        "interestLevel": "Dominant|Collaborative|Detached|Inquisitive|Passive Observer",
-        "metrics": { "intensity": number, "confidence": number, "stability": number, "transparency": number, "engagement": number },
-        "keyObservation": "string"
+        "interestLevel": "Dominant|Collaborative|Detached|Inquisitive",
+        "vibe": "REHEARSED|SPONTANEOUS",
+        "cognitiveStyle": "CALCULATED|INTUITIVE|ANALYTICAL",
+        "linguisticStyle": "MONOTONE|FRAGMENTED|FLUID|DIRECT",
+        "metrics": { 
+          "transparency": number, 
+          "shielding": number,
+          "stress": number,
+          "confidence": number 
+        },
+        "keyObservation": "string",
+        "honestyAlerts": ["string"]
       }]
     }
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview', 
       contents: {
         parts: [
           { text: prompt },
@@ -53,8 +69,7 @@ export const analyzeConversation = async (audioBase64: string, mimeType: string)
         ]
       },
       config: {
-        responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 0 } 
+        responseMimeType: "application/json"
       }
     });
 
@@ -63,21 +78,13 @@ export const analyzeConversation = async (audioBase64: string, mimeType: string)
     const parsed = JSON.parse(cleanJson);
     
     return {
-      summary: parsed.summary || "No summary generated.",
-      meetingPulse: parsed.meetingPulse || "Steady Flow",
-      actionItems: Array.isArray(parsed.actionItems) ? parsed.actionItems : [],
-      topicClusters: Array.isArray(parsed.topicClusters) ? parsed.topicClusters : [],
-      recallCards: Array.isArray(parsed.recallCards) ? parsed.recallCards : [],
-      interactionPatterns: Array.isArray(parsed.interactionPatterns) ? parsed.interactionPatterns : [],
-      suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
-      transcript: Array.isArray(parsed.transcript) ? parsed.transcript : [{ speaker: "System", text: "No speech detected." }],
-      overallTones: Array.isArray(parsed.overallTones) ? parsed.overallTones : [],
+      ...parsed,
       id: Math.random().toString(36).substring(7),
       timestamp: Date.now(),
       chatHistory: []
     } as ConversationAnalysis;
   } catch (error) {
-    console.error("Gemini Analysis Error:", error);
+    console.error("Intelligence synthesis failed:", error);
     throw error;
   }
 };
@@ -89,13 +96,12 @@ export const chatWithSession = async (
 ): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const context = transcript.map(t => `${t.speaker}: ${t.text}`).join('\n');
-  const chatHistoryContext = (history || []).map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.text}`).join('\n');
+  const chatHistoryContext = (history || []).map(h => `${h.role === 'user' ? 'Operator' : 'Intelligence'}: ${h.text}`).join('\n');
 
-  const prompt = `Answer directly based on this conversation. TRANSCRIPT: ${context}. HISTORY: ${chatHistoryContext}. QUERY: ${query}`;
+  const prompt = `Act as the TEXTA Behavioral Intelligence Node. Provide deep structural answers based on the session logic. CONTEXT: ${context}. HISTORY: ${chatHistoryContext}. QUERY: ${query}`;
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: prompt,
-    config: { thinkingConfig: { thinkingBudget: 0 } }
+    contents: prompt
   });
-  return response.text || "No intelligence found.";
+  return response.text || "Connection to intelligence node lost.";
 };
