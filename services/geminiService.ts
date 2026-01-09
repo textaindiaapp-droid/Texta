@@ -2,54 +2,57 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ConversationAnalysis, ChatMessage, TranscriptLine } from "../types.ts";
 
+/**
+ * THE CORE SYNTHESIS ENGINE
+ * This function handles the transformation of raw audio into structured behavioral intelligence.
+ */
 export const analyzeConversation = async (audioBase64: string, mimeType: string): Promise<ConversationAnalysis> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
     TASK: CONDUCT DEEP BEHAVIORAL AND ACOUSTIC INTELLIGENCE SYNTHESIS.
     
-    SYSTEM INSTRUCTION: 
-    Act as a high-level Intelligence Node. Analyze the acoustic and linguistic properties of the provided session. 
-    Focus on "Structural Honesty" and "Acoustic Integrity".
+    SYSTEM ROLE: 
+    Act as the TEXTA Intelligence Node. You are a high-precision diagnostic tool designed to extract structural honesty and strategic value from conversation audio.
     
-    ANALYSIS REQUIREMENTS:
-    1. ACOUSTIC INTEGRITY: Detect if the speech is "REHEARSED" (reading from a script) or "SPONTANEOUS" (natural flow).
-    2. PSYCHOMETRICS (0-100%):
-       - Transparency: Willingness to share information.
-       - Shielding: Active withholding or deflection.
-       - Stress: Vocal tension and logical inconsistency.
-       - Confidence: Vocal authority.
-    3. STRATEGIC NODES: Provide AI-driven strategic suggestions for following up on this session.
-    4. VERBATIM TRANSCRIPT: Capture multi-lingual dialogue accurately.
+    ANALYSIS FLOW:
+    1. VERBATIM EXTRACTION: Generate a multi-speaker transcript.
+    2. THEMATIC CLUSTERING: Identify the primary "what" (topics) and "how" (action items).
+    3. ACOUSTIC INTEGRITY: Analyze vocal authority and cadence to determine if speech is "REHEARSED" or "SPONTANEOUS".
+    4. PSYCHOMETRIC MAPPING: For each speaker, calculate:
+       - Transparency: Information openness.
+       - Shielding: Active withholding/deflection.
+       - Stress: Vocal tension markers.
+       - Confidence: Authority and flow.
+    5. STRATEGIC NODES: Provide high-level AI suggestions for following up on the discussion.
 
-    JSON OUTPUT SCHEMA:
+    STRICT JSON OUTPUT SCHEMA:
     {
-      "summary": "string",
+      "summary": "One sentence definitive summary of the session core.",
       "meetingPulse": "High Energy|Steady Flow|Tense|Quiet",
-      "suggestions": ["string"],
-      "topicClusters": [{ "label": "string", "relevance": number, "summary": "string" }],
-      "recallCards": [{ "fact": "string", "source": "string", "category": "Commitment|Technical|Financial|Deadline|Concept" }],
-      "actionItems": [{ "task": "string", "priority": "Low|Medium|High" }],
+      "suggestions": ["Strategic action nodes for the user."],
+      "topicClusters": [{ "label": "Topic Name", "relevance": 0-100, "summary": "Short description" }],
+      "recallCards": [{ "fact": "Key piece of info", "source": "Speaker Name", "category": "Commitment|Technical|Financial|Deadline|Concept" }],
+      "actionItems": [{ "task": "Specific task", "priority": "Low|Medium|High" }],
       "transcript": [{ 
-        "speaker": "string", 
-        "text": "string", 
-        "integrityFlag": { "type": "Falsehood|Hiding|Inconsistency", "reason": "string", "confidence": number } 
+        "speaker": "Name", 
+        "text": "Dialogue", 
+        "integrityFlag": { "type": "Falsehood|Hiding|Inconsistency", "reason": "Structural reasoning", "confidence": 0-100 } 
       }],
       "overallTones": [{ 
-        "speaker": "string", 
-        "tone": "ToneLabel", 
+        "speaker": "Name", 
         "interestLevel": "Dominant|Collaborative|Detached|Inquisitive",
         "vibe": "REHEARSED|SPONTANEOUS",
         "cognitiveStyle": "CALCULATED|INTUITIVE|ANALYTICAL",
         "linguisticStyle": "MONOTONE|FRAGMENTED|FLUID|DIRECT",
         "metrics": { 
-          "transparency": number, 
-          "shielding": number,
-          "stress": number,
-          "confidence": number 
+          "transparency": 0-100, 
+          "shielding": 0-100,
+          "stress": 0-100,
+          "confidence": 0-100 
         },
-        "keyObservation": "string",
-        "honestyAlerts": ["string"]
+        "keyObservation": "High-level behavioral observation.",
+        "honestyAlerts": ["Specific warnings about information withholding."]
       }]
     }
   `;
@@ -89,6 +92,10 @@ export const analyzeConversation = async (audioBase64: string, mimeType: string)
   }
 };
 
+/**
+ * CONSULTATION NODE
+ * Handles real-time queries against the session context.
+ */
 export const chatWithSession = async (
   query: string, 
   transcript: TranscriptLine[], 
@@ -98,7 +105,7 @@ export const chatWithSession = async (
   const context = transcript.map(t => `${t.speaker}: ${t.text}`).join('\n');
   const chatHistoryContext = (history || []).map(h => `${h.role === 'user' ? 'Operator' : 'Intelligence'}: ${h.text}`).join('\n');
 
-  const prompt = `Act as the TEXTA Behavioral Intelligence Node. Provide deep structural answers based on the session logic. CONTEXT: ${context}. HISTORY: ${chatHistoryContext}. QUERY: ${query}`;
+  const prompt = `Act as the TEXTA Intelligence Node. Answer the query based on the session logic and transcript provided. CONTEXT: ${context}. HISTORY: ${chatHistoryContext}. QUERY: ${query}`;
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: prompt
