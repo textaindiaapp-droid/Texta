@@ -2,57 +2,49 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ConversationAnalysis, ChatMessage, TranscriptLine } from "../types.ts";
 
-/**
- * THE CORE SYNTHESIS ENGINE
- * This function handles the transformation of raw audio into structured behavioral intelligence.
- */
 export const analyzeConversation = async (audioBase64: string, mimeType: string): Promise<ConversationAnalysis> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    TASK: CONDUCT DEEP BEHAVIORAL AND ACOUSTIC INTELLIGENCE SYNTHESIS.
+    DIAGNOSTIC TASK: MULTI-SPEAKER INTELLIGENCE SYNTHESIS (PHASE 0).
     
-    SYSTEM ROLE: 
-    Act as the TEXTA Intelligence Node. You are a high-precision diagnostic tool designed to extract structural honesty and strategic value from conversation audio.
-    
-    ANALYSIS FLOW:
-    1. VERBATIM EXTRACTION: Generate a multi-speaker transcript.
-    2. THEMATIC CLUSTERING: Identify the primary "what" (topics) and "how" (action items).
-    3. ACOUSTIC INTEGRITY: Analyze vocal authority and cadence to determine if speech is "REHEARSED" or "SPONTANEOUS".
-    4. PSYCHOMETRIC MAPPING: For each speaker, calculate:
-       - Transparency: Information openness.
-       - Shielding: Active withholding/deflection.
-       - Stress: Vocal tension markers.
-       - Confidence: Authority and flow.
-    5. STRATEGIC NODES: Provide high-level AI suggestions for following up on the discussion.
+    INSTRUCTIONS:
+    - Diarize all unique speakers ($N$).
+    - Generate a verbatim transcript with sub-second precision.
+    - BEHAVIORAL METRICS (0-100) - EVALUATE BEYOND VOLUME OR SPEED:
+      * Transparency: Evaluate structural logical consistency vs. lexical deflection. Detect "stalling" or "filler-density" shifts.
+      * Stress: Monitor micro-tremors in cadence, frequency shifts in vocal pitch, and irregular respiratory pacing.
+      * Confidence: Analyze pitch range modulation width, assertive terminal contours, and steady amplitude.
+      * Engagement: Measure via interactive mirroring, response latency (natural vs. hesitant), and vocal energy distribution.
+      * Stability: Calculate variance in intonation patterns over time. Low stability suggests fluctuating emotional regulation or high cognitive load.
+      * Shielding: Detect rhetorical avoidance patterns and lexical hedging (e.g., "technically", "essentially", "I suppose").
+    - Map strategic action items and factual recall cards.
+    - Identify Speaker Tones (Assertive, Hesitant, Urgent, Inquisitive, etc.) for each major turn.
 
-    STRICT JSON OUTPUT SCHEMA:
+    JSON SCHEMA:
     {
-      "summary": "One sentence definitive summary of the session core.",
+      "summary": "High-level objective summary of the session.",
       "meetingPulse": "High Energy|Steady Flow|Tense|Quiet",
-      "suggestions": ["Strategic action nodes for the user."],
-      "topicClusters": [{ "label": "Topic Name", "relevance": 0-100, "summary": "Short description" }],
-      "recallCards": [{ "fact": "Key piece of info", "source": "Speaker Name", "category": "Commitment|Technical|Financial|Deadline|Concept" }],
-      "actionItems": [{ "task": "Specific task", "priority": "Low|Medium|High" }],
-      "transcript": [{ 
-        "speaker": "Name", 
-        "text": "Dialogue", 
-        "integrityFlag": { "type": "Falsehood|Hiding|Inconsistency", "reason": "Structural reasoning", "confidence": 0-100 } 
-      }],
+      "suggestions": ["Strategic paths or advice"],
+      "topicClusters": [{ "label": "Topic", "relevance": 0-100, "summary": "Short desc" }],
+      "recallCards": [{ "fact": "Data point", "source": "Speaker Name", "category": "Commitment|Technical|Financial|Deadline|Concept" }],
+      "actionItems": [{ "task": "Task description", "priority": "Low|Medium|High" }],
+      "transcript": [{ "speaker": "Name", "text": "Verbatim text", "integrityFlag": { "type": "Falsehood|Hiding|Inconsistency", "reason": "Reason", "confidence": 0-100 } }],
       "overallTones": [{ 
         "speaker": "Name", 
+        "tone": "Neutral|Assertive|Questioning|Concerned|Positive|Urgent|Hesitant",
         "interestLevel": "Dominant|Collaborative|Detached|Inquisitive",
         "vibe": "REHEARSED|SPONTANEOUS",
-        "cognitiveStyle": "CALCULATED|INTUITIVE|ANALYTICAL",
-        "linguisticStyle": "MONOTONE|FRAGMENTED|FLUID|DIRECT",
         "metrics": { 
           "transparency": 0-100, 
-          "shielding": 0-100,
-          "stress": 0-100,
-          "confidence": 0-100 
+          "shielding": 0-100, 
+          "stress": 0-100, 
+          "confidence": 0-100,
+          "engagement": 0-100,
+          "stability": 0-100
         },
-        "keyObservation": "High-level behavioral observation.",
-        "honestyAlerts": ["Specific warnings about information withholding."]
+        "keyObservation": "Nuanced behavioral observation of this speaker.",
+        "honestyAlerts": ["Specific anomalies detected in vocal logic"]
       }]
     }
   `;
@@ -72,7 +64,8 @@ export const analyzeConversation = async (audioBase64: string, mimeType: string)
         ]
       },
       config: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 2000 }
       }
     });
 
@@ -92,10 +85,6 @@ export const analyzeConversation = async (audioBase64: string, mimeType: string)
   }
 };
 
-/**
- * CONSULTATION NODE
- * Handles real-time queries against the session context.
- */
 export const chatWithSession = async (
   query: string, 
   transcript: TranscriptLine[], 
@@ -105,7 +94,7 @@ export const chatWithSession = async (
   const context = transcript.map(t => `${t.speaker}: ${t.text}`).join('\n');
   const chatHistoryContext = (history || []).map(h => `${h.role === 'user' ? 'Operator' : 'Intelligence'}: ${h.text}`).join('\n');
 
-  const prompt = `Act as the TEXTA Intelligence Node. Answer the query based on the session logic and transcript provided. CONTEXT: ${context}. HISTORY: ${chatHistoryContext}. QUERY: ${query}`;
+  const prompt = `Act as the TEXTA Intelligence Node. Answer the operator query based on the session logic. CONTEXT: ${context}. HISTORY: ${chatHistoryContext}. QUERY: ${query}`;
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: prompt

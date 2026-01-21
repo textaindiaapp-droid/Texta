@@ -8,11 +8,15 @@ import AccountView from './components/AccountView.tsx';
 import DetailView from './components/DetailView.tsx';
 import BottomNav from './components/BottomNav.tsx';
 import ProcessingView from './components/ProcessingView.tsx';
+import AuthView from './components/AuthView.tsx';
 import { ViewState, ConversationAnalysis, Reminder, TaskProgress } from './types.ts';
 import { analyzeConversation } from './services/geminiService.ts';
 import { Storage } from './services/storage.ts';
+import { auth } from './services/firebase.ts';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.HOME);
   const [conversations, setConversations] = useState<ConversationAnalysis[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -21,22 +25,31 @@ const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [loadedConversations, loadedReminders] = await Promise.all([
-          Storage.getConversations(),
-          Storage.getReminders()
-        ]);
-        setConversations(loadedConversations);
-        setReminders(loadedReminders);
-      } catch (err) {
-        console.error("Workspace Init Error:", err);
-      } finally {
-        setIsInitializing(false);
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        await refreshData();
+      } else {
+        setConversations([]);
+        setReminders([]);
       }
-    };
-    loadData();
+      setIsInitializing(false);
+    });
+    return () => unsubscribe();
   }, []);
+
+  const refreshData = async () => {
+    try {
+      const [loadedConversations, loadedReminders] = await Promise.all([
+        Storage.fetchConversations(true), // Fetch all, including archived for the Account view
+        Storage.fetchReminders()
+      ]);
+      setConversations(loadedConversations);
+      setReminders(loadedReminders);
+    } catch (err) {
+      console.error("Workspace Data Refresh Error:", err);
+    }
+  };
 
   const handleStopRecording = async (audioBase64: string, mimeType: string) => {
     if (!audioBase64) return;
@@ -44,13 +57,8 @@ const App: React.FC = () => {
     setError(null);
     try {
       const result = await analyzeConversation(audioBase64, mimeType);
-      await Storage.saveConversation(result);
-      const [updatedConvs, updatedRems] = await Promise.all([
-        Storage.getConversations(),
-        Storage.getReminders()
-      ]);
-      setConversations(updatedConvs);
-      setReminders(updatedRems);
+      await Storage.saveConversation(result, audioBase64);
+      await refreshData();
       setActiveAnalysis(null);
       setCurrentView(ViewState.HISTORY); 
     } catch (err) {
@@ -62,42 +70,62 @@ const App: React.FC = () => {
 
   const handleUpdateProgress = async (id: string, nextProgress: TaskProgress) => {
     await Storage.updateReminderProgress(id, nextProgress);
-    const updated = await Storage.getReminders();
-    setReminders(updated);
+    await refreshData();
   };
 
   const handleUpdateReminder = async (id: string, patch: Partial<Reminder>) => {
     await Storage.updateReminder(id, patch);
-    const updated = await Storage.getReminders();
-    setReminders(updated);
+    await refreshData();
+  };
+
+  const handleAddReminder = async (text: string, priority: string) => {
+    await Storage.createReminder(text, priority);
+    await refreshData();
+  };
+
+  const handleDeleteReminder = async (id: string) => {
+    await Storage.deleteReminder(id);
+    await refreshData();
   };
 
   const handleDeleteConv = async (id: string) => {
-    await Storage.deleteConversation(id);
-    const [updatedConvs, updatedRems] = await Promise.all([
-      Storage.getConversations(),
-      Storage.getReminders()
-    ]);
-    setConversations(updatedConvs);
-    setReminders(updatedRems);
+    await Storage.deleteConversation(id); // This now archives
+    await refreshData();
     setCurrentView(ViewState.HISTORY);
   };
 
-  const handleClearAll = () => {
-    Storage.clearAll();
-    setConversations([]);
-    setReminders([]);
+  const handleRestoreConv = async (id: string) => {
+    await Storage.restoreConversation(id);
+    await refreshData();
+  };
+
+  const handlePermanentDeleteConv = async (id: string) => {
+    await Storage.deletePermanently(id);
+    await refreshData();
+  };
+
+  const handleClearAll = async () => {
+    await Storage.clearAll();
+    await refreshData();
     setCurrentView(ViewState.HOME);
   };
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-6 mesh-bg">
-        <div className="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(99,102,241,0.5)]"></div>
-        <p className="label-caps text-white animate-pulse">Initializing Nodes</p>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-6 mesh-bg">
+        <div className="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+        <p className="label-caps text-indigo-600 animate-pulse tracking-[0.4em]">Calibrating Node</p>
       </div>
     );
   }
+
+  if (!user) {
+    return <AuthView />;
+  }
+
+  // Filter conversations for different views
+  const activeConversations = conversations.filter(c => !c.archivedAt);
+  const archivedConversations = conversations.filter(c => !!c.archivedAt);
 
   const renderView = () => {
     switch (currentView) {
@@ -106,9 +134,9 @@ const App: React.FC = () => {
           <HomeView 
             onStopRecording={handleStopRecording} 
             pendingReminders={reminders.filter(r => r.progress !== 'Completed')}
-            recentConversations={conversations}
+            recentConversations={activeConversations}
             onViewConversation={(id) => {
-              const found = conversations.find(c => c.id === id);
+              const found = activeConversations.find(c => c.id === id);
               if (found) {
                 setActiveAnalysis(found);
                 setCurrentView(ViewState.DETAIL);
@@ -118,14 +146,30 @@ const App: React.FC = () => {
           />
         );
       case ViewState.HISTORY:
-        return <HistoryView conversations={conversations} onSelect={(id) => {
-          const found = conversations.find(c => c.id === id);
+        return <HistoryView conversations={activeConversations} onSelect={(id) => {
+          const found = activeConversations.find(c => c.id === id);
           if (found) { setActiveAnalysis(found); setCurrentView(ViewState.DETAIL); }
         }} />;
       case ViewState.REMINDERS:
-        return <RemindersView reminders={reminders} onToggle={handleUpdateProgress} onUpdateReminder={handleUpdateReminder} />;
+        return (
+          <RemindersView 
+            reminders={reminders} 
+            onToggle={handleUpdateProgress} 
+            onUpdateReminder={handleUpdateReminder}
+            onAddReminder={handleAddReminder}
+            onDeleteReminder={handleDeleteReminder}
+          />
+        );
       case ViewState.ACCOUNT:
-        return <AccountView onClearData={handleClearAll} />;
+        return (
+          <AccountView 
+            onClearData={handleClearAll} 
+            stats={{ sessions: activeConversations.length, items: reminders.length }} 
+            archivedConversations={archivedConversations}
+            onRestoreConv={handleRestoreConv}
+            onPermanentDeleteConv={handlePermanentDeleteConv}
+          />
+        );
       case ViewState.DETAIL:
         return activeAnalysis ? <DetailView analysis={activeAnalysis} onBack={() => setCurrentView(ViewState.HISTORY)} onDelete={handleDeleteConv} /> : null;
       case ViewState.PROCESSING:

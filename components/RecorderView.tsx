@@ -39,7 +39,7 @@ const RecorderView: React.FC<RecorderViewProps> = ({ onStop, state }) => {
     const analyser = audioContext.createAnalyser();
     const source = audioContext.createMediaStreamSource(stream);
     source.connect(analyser);
-    analyser.fftSize = 64; // Reduced for cleaner symmetrical bars
+    analyser.fftSize = 64; 
     
     audioContextRef.current = audioContext;
     analyserRef.current = analyser;
@@ -71,12 +71,10 @@ const RecorderView: React.FC<RecorderViewProps> = ({ onStop, state }) => {
         
         ctx.fillStyle = isRecording ? `rgba(99, 102, 241, ${opacity})` : 'rgba(203, 213, 225, 0.2)';
         
-        // Draw symmetrical right
         ctx.beginPath();
         ctx.roundRect(centerX + (i * (barWidth + barSpacing)), (height - barHeight) / 2, barWidth, barHeight, 10);
         ctx.fill();
 
-        // Draw symmetrical left
         ctx.beginPath();
         ctx.roundRect(centerX - (i * (barWidth + barSpacing)) - barWidth, (height - barHeight) / 2, barWidth, barHeight, 10);
         ctx.fill();
@@ -102,7 +100,9 @@ const RecorderView: React.FC<RecorderViewProps> = ({ onStop, state }) => {
         mediaRecorder.ondataavailable = (e) => e.data.size > 0 && audioChunksRef.current.push(e.data);
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
-          if (audioBlob.size < 1000) { cleanupAudio(); return; }
+          // Ensure we have at least 1 second of audio
+          if (audioBlob.size < 100) { cleanupAudio(); return; }
+          
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
           reader.onloadend = () => {
@@ -116,7 +116,7 @@ const RecorderView: React.FC<RecorderViewProps> = ({ onStop, state }) => {
         setIsRecording(true);
         startTimer();
         startVisualizer(stream);
-      } catch (err) { alert("Microphone required for synthesis."); }
+      } catch (err) { alert("Microphone access required for Intelligence synthesis."); }
     } else {
       if (mediaRecorderRef.current?.state === 'recording') {
         mediaRecorderRef.current.stop();
@@ -144,7 +144,6 @@ const RecorderView: React.FC<RecorderViewProps> = ({ onStop, state }) => {
 
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto select-none space-y-12">
-      {/* Privacy Shield Node */}
       <div className={`px-6 py-2 rounded-full border flex items-center gap-3 transition-all duration-1000 ${
         isRecording ? 'bg-indigo-50 border-indigo-200 shadow-lg shadow-indigo-100' : 'bg-slate-50 border-slate-100 opacity-60'
       }`}>
@@ -154,12 +153,10 @@ const RecorderView: React.FC<RecorderViewProps> = ({ onStop, state }) => {
         </span>
       </div>
 
-      {/* Spectrum Area */}
       <div className="w-full h-28 flex items-center justify-center px-4 overflow-visible">
         <canvas ref={canvasRef} className="w-full h-full" width={400} height={120} />
       </div>
 
-      {/* The Core */}
       <div className="relative group">
         <div className={`absolute inset-[-30px] rounded-full border border-indigo-500/10 transition-all duration-1000 ${
           isRecording ? 'scale-110 opacity-100 animate-[spin_12s_linear_infinite]' : 'scale-90 opacity-0'
@@ -191,7 +188,6 @@ const RecorderView: React.FC<RecorderViewProps> = ({ onStop, state }) => {
         </button>
       </div>
 
-      {/* Meta Area */}
       <div className="text-center h-28 space-y-4">
         {isRecording ? (
           <div className="animate-liquid-reveal space-y-4">
@@ -203,7 +199,7 @@ const RecorderView: React.FC<RecorderViewProps> = ({ onStop, state }) => {
           </div>
         ) : (
           <div className="space-y-3 opacity-90">
-            <p className="text-2xl font-black text-slate-900 tracking-tight">Intelligence capture</p>
+            <p className="text-2xl font-black text-slate-900 tracking-tight">Capture Intelligence</p>
             <p className="text-[11px] font-bold text-slate-400 max-w-[220px] mx-auto opacity-70 uppercase tracking-[0.2em] leading-relaxed">
               Touch to initialize session synthesis
             </p>

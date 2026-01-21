@@ -86,9 +86,19 @@ export interface SpeakerInsight {
   honestyAlerts: string[]; // Specific notes on hiding/lying
 }
 
+export interface Reminder {
+  id: string;
+  conversationId: string;
+  text: string;
+  priority: Priority;
+  progress: TaskProgress;
+  createdAt: number;
+}
+
 export interface ConversationAnalysis {
   id: string;
   timestamp: number;
+  archivedAt?: number; // Timestamp when item was moved to archive
   summary: string;
   meetingPulse: 'High Energy' | 'Steady Flow' | 'Tense' | 'Quiet';
   actionItems: ActionItem[];
@@ -99,20 +109,7 @@ export interface ConversationAnalysis {
   transcript: TranscriptLine[];
   overallTones: SpeakerInsight[];
   chatHistory?: ChatMessage[];
-}
-
-export interface Reminder {
-  id: string;
-  conversationId: string;
-  text: string;
-  subtitle?: string;
-  priority: Priority;
-  location?: string;
-  startDate?: string;
-  dueDate?: string;
-  documentUrl?: string;
-  progress: TaskProgress;
-  createdAt: number;
+  audioUrl?: string; // New field for the stored audio recording
 }
 
 export enum ViewState {
